@@ -10,6 +10,12 @@ export const inputEmailValidation = {
     message: 'Email address is required',
   },
 };
+export const inputUsernameValidation = {
+  required: {
+    value: true,
+    message: 'Username is required',
+  },
+};
 export const inputPasswordValidation = {
   required: {
     value: true,

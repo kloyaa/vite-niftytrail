@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -13,23 +13,62 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { UilSignInAlt } from '@iconscout/react-unicons';
-import { setDocumentTitle } from '../../utils';
+import { HttpClient, isNotEmpty, setDocumentTitle } from '../../utils';
 import { useForm } from 'react-hook-form';
-import { inputEmailValidation, inputPasswordValidation } from '../../const';
+import { inputPasswordValidation, inputUsernameValidation } from '../../const';
+import { API, HttpMethod } from '../../enum';
+import { AxiosRequestConfig } from 'axios';
 import { ILogin } from '../../interface';
+import { InputPassword } from '../../components';
+import { InputUsername } from '../../components/input/username.input.component';
+import { useDeviceInfo } from '../../hooks';
 
 function Login(): JSX.Element {
   const date = new Date().getFullYear();
-  const {
-    handleSubmit,
-    register,
-    formState: { errors },
-  } = useForm();
+  const httpClient = new HttpClient();
 
-  const onLogin = (event: any) => {
+  const deviceInfo = useDeviceInfo();
+  const [state, setState] = useState({
+    login: {
+      errorMessage: ''
+    }
+  });
+  const { handleSubmit, register, formState: { errors, isSubmitting } } = useForm();
+
+
+  const onLogin = async (event: any) => {
     const value: ILogin = event;
-    console.log(value);
-    // TODO: login logic
+    const inputUsername = document.getElementById('input-username');
+    const inputPassword = document.getElementById('input-password');
+   
+    try {
+      const configPayload: AxiosRequestConfig = {
+        method: HttpMethod.POST,
+        url: API.LOGIN,
+        data: {
+          "username": value.username,
+          "password": value.password,
+          "device": deviceInfo
+        },
+      }
+      const response = await httpClient.request<{ accessToken: string }>(configPayload);
+    } catch (error: any) {
+      if (inputUsername && inputPassword) {
+        inputUsername.classList.add('form-shake');     
+        inputPassword.classList.add('form-shake-2');   
+
+        setTimeout(() => {
+          inputUsername.classList.remove('form-shake');
+          inputPassword.classList.remove('form-shake-2');
+        }, 1000); // 
+      }
+      setState((prev) => ({
+        ...prev,
+        login: {
+          errorMessage: error.message
+        }
+      }));
+    }
   };
 
   useEffect(() => {
@@ -51,44 +90,47 @@ function Login(): JSX.Element {
       >
         <form onSubmit={handleSubmit(onLogin)}>
           <Box
-            rounded={'3xl'}
+            rounded={'md'}
             bg={useColorModeValue('white', 'gray.700')}
-            boxShadow={'md'}
-            width={'lg'}
-            p={'16'}
+            boxShadow={'sm'}
+            width={'sm'}
+            p={'12'}
           >
             <Stack spacing={4}>
               <FormControl id="input-email">
-                <FormLabel htmlFor="email">Email address</FormLabel>
-                <Input
-                  type="email"
-                  size={'lg'}
-                  borderColor={errors.email && 'red.300'}
-                  focusBorderColor={errors.email && 'red.300'}
-                  {...register('email', inputEmailValidation)}
+                <FormLabel htmlFor="email">Username</FormLabel>
+                <InputUsername
+                  errors={errors}
+                  state={state}
+                  register={register}
+                  inputUsernameValidation={inputUsernameValidation}
                 />
-                {errors.email && (
+                {errors.username && (
                   <Text color={'red'} mt={'2'} fontSize={'sm'}>
-                    {errors.email.message?.toString()}
+                    {errors.username.message?.toString()}
                   </Text>
                 )}
               </FormControl>
               <FormControl id="password">
                 <FormLabel>Password</FormLabel>
-                <Input
-                  type="password"
-                  size={'lg'}
-                  borderColor={errors.password && 'red.300'}
-                  focusBorderColor={errors.password && 'red.300'}
-                  {...register('password', inputPasswordValidation)}
+                <InputPassword
+                  errors={errors}
+                  state={state}
+                  register={register}
+                  inputPasswordValidation={inputPasswordValidation}
                 />
                 {errors.password && (
                   <Text color={'red'} mt={'2'} fontSize={'sm'}>
                     {errors.password.message?.toString()}
                   </Text>
                 )}
+                {isNotEmpty(state.login.errorMessage) && (
+                  <Text color={'red'} mt={'2'} fontSize={'sm'}>
+                    { state.login.errorMessage.toString() }
+                  </Text>
+                )}
               </FormControl>
-              <Stack spacing={10}>
+              <Stack spacing={'20'}>
                 <Stack
                   direction={{ base: 'column', sm: 'row' }}
                   align={'start'}
@@ -100,17 +142,18 @@ function Login(): JSX.Element {
                 <Flex direction={'column'} gap={'2'}>
                   <Button
                     type={'submit'}
-                    size={'lg'}
+                    size={'md'}
                     leftIcon={<UilSignInAlt size="20" />}
                     colorScheme={'purple'}
+                    isLoading={isSubmitting}
                   >
                     Sign in
                   </Button>
                   <Button
                     type={'button'}
-                    size={'lg'}
+                    size={'md'}
                     colorScheme={'purple'}
-                    variant={'outline'}
+                    variant={'ghost'}
                   >
                     Don't have account?
                   </Button>
