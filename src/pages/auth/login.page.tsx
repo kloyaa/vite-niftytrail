@@ -6,7 +6,6 @@ import {
   Flex,
   FormControl,
   FormLabel,
-  Input,
   Link,
   Stack,
   Text,
@@ -52,6 +51,7 @@ function Login(): JSX.Element {
         },
       }
       const response = await httpClient.request<{ accessToken: string }>(configPayload);
+      console.log(response)
     } catch (error: any) {
       if (inputUsername && inputPassword) {
         inputUsername.classList.add('form-shake');     
